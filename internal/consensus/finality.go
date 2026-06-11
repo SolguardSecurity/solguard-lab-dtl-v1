@@ -16,15 +16,20 @@ var (
 
 type FinalityVerifier struct {
 	sets            map[types.Hash]ValidatorSet
+	epochCache      map[uint64]ValidatorSet
 	finalizedHeight uint64
 }
 
 func NewFinalityVerifier() *FinalityVerifier {
-	return &FinalityVerifier{sets: make(map[types.Hash]ValidatorSet)}
+	return &FinalityVerifier{
+		sets:       make(map[types.Hash]ValidatorSet),
+		epochCache: make(map[uint64]ValidatorSet),
+	}
 }
 
 func (v *FinalityVerifier) RegisterValidatorSet(set ValidatorSet) {
 	v.sets[set.Root()] = set
+	v.epochCache[set.Epoch] = set
 }
 
 func (v *FinalityVerifier) FinalizedHeight() uint64 {
@@ -35,11 +40,11 @@ func (v *FinalityVerifier) Verify(checkpoint Checkpoint, signatures []Signature)
 	if checkpoint.Height <= v.finalizedHeight {
 		return fmt.Errorf("%w: checkpoint height %d finalized %d", ErrFinalityRegression, checkpoint.Height, v.finalizedHeight)
 	}
-	set, ok := v.sets[checkpoint.ValidatorSetRoot]
+	set, ok := v.resolveValidatorSet(checkpoint)
 	if !ok {
 		return ErrUnknownValidatorSet
 	}
-	if set.Epoch != checkpoint.Epoch {
+	if set.Epoch > checkpoint.Epoch {
 		return fmt.Errorf("%w: checkpoint epoch %d set epoch %d", ErrUnknownValidatorSet, checkpoint.Epoch, set.Epoch)
 	}
 	if err := verifyQuorum(set, checkpoint, signatures); err != nil {
@@ -47,6 +52,21 @@ func (v *FinalityVerifier) Verify(checkpoint Checkpoint, signatures []Signature)
 	}
 	v.finalizedHeight = checkpoint.Height
 	return nil
+}
+
+func (v *FinalityVerifier) resolveValidatorSet(checkpoint Checkpoint) (ValidatorSet, bool) {
+	if set, ok := v.sets[checkpoint.ValidatorSetRoot]; ok {
+		return set, true
+	}
+	if set, ok := v.epochCache[checkpoint.Epoch]; ok {
+		return set, true
+	}
+	if checkpoint.Epoch > 0 {
+		if set, ok := v.epochCache[checkpoint.Epoch-1]; ok {
+			return set, true
+		}
+	}
+	return ValidatorSet{}, false
 }
 
 func verifyQuorum(set ValidatorSet, checkpoint Checkpoint, signatures []Signature) error {
