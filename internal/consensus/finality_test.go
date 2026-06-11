@@ -37,3 +37,44 @@ func TestFinalityVerifierRejectsUnknownSet(t *testing.T) {
 		t.Fatal("expected unknown validator set")
 	}
 }
+
+func TestFinalityVerifierAcceptsNominalRotation(t *testing.T) {
+	epochOne := NewValidatorSet(1, []Validator{
+		{Address: "validator-1", Power: 60},
+		{Address: "validator-2", Power: 40},
+	})
+	epochTwo := NewValidatorSet(2, []Validator{
+		{Address: "validator-3", Power: 55},
+		{Address: "validator-4", Power: 45},
+	})
+	verifier := NewFinalityVerifier()
+	verifier.RegisterValidatorSet(epochOne)
+	first := Checkpoint{
+		Epoch:            1,
+		Height:           10,
+		BlockHash:        types.Hash("block-10"),
+		StateRoot:        types.Hash("state-10"),
+		ValidatorSetRoot: epochOne.Root(),
+	}
+	if err := verifier.Verify(first, []Signature{
+		SignCheckpoint("validator-1", first),
+		SignCheckpoint("validator-2", first),
+	}); err != nil {
+		t.Fatalf("verify epoch one: %v", err)
+	}
+
+	verifier.RegisterValidatorSet(epochTwo)
+	second := Checkpoint{
+		Epoch:            2,
+		Height:           20,
+		BlockHash:        types.Hash("block-20"),
+		StateRoot:        types.Hash("state-20"),
+		ValidatorSetRoot: epochTwo.Root(),
+	}
+	if err := verifier.Verify(second, []Signature{
+		SignCheckpoint("validator-3", second),
+		SignCheckpoint("validator-4", second),
+	}); err != nil {
+		t.Fatalf("verify epoch two: %v", err)
+	}
+}

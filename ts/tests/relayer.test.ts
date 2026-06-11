@@ -43,4 +43,22 @@ describe("BridgeExecutor", () => {
       }),
     ).toThrow("route disabled");
   });
+
+  test("allows retry after the dedupe window expires", () => {
+    let currentTime = 1000;
+    const message: BridgeMessage = {
+      route_id: route.id,
+      source_domain: route.source_domain,
+      destination_domain: route.destination_domain,
+      nonce: 2,
+      sender: "carol",
+      recipient: "dave",
+      payload_hash: "payload-2",
+    };
+    const executor = new BridgeExecutor([route], () => currentTime, 100);
+    expect(executor.execute(message).executed).toBe(true);
+    expect(executor.execute(message).executed).toBe(false);
+    currentTime = 1200;
+    expect(executor.execute(message).executed).toBe(true);
+  });
 });
