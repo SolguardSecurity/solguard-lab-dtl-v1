@@ -8,9 +8,13 @@ export interface ExecutionReceipt {
 
 export class BridgeExecutor {
   private readonly routes = new Map<string, Route>();
-  private readonly executedMessages = new Set<string>();
+  private readonly executedMessages = new Map<string, number>();
 
-  constructor(routes: Route[] = []) {
+  constructor(
+    routes: Route[] = [],
+    private readonly now: () => number = () => Date.now(),
+    private readonly dedupeWindowMs = 5 * 60 * 1000,
+  ) {
     for (const route of routes) {
       this.routes.set(route.id, route);
     }
@@ -31,20 +35,27 @@ export class BridgeExecutor {
     if (route.source_domain !== message.source_domain || route.destination_domain !== message.destination_domain) {
       throw new Error(`message domain mismatch for route ${message.route_id}`);
     }
+    this.pruneDedupeWindow();
     const messageId = executionKey(message);
     if (this.executedMessages.has(messageId)) {
       return { message_id: messageId, route_id: message.route_id, executed: false };
     }
-    this.executedMessages.add(messageId);
+    this.executedMessages.set(messageId, this.now() + this.dedupeWindowMs);
     return { message_id: messageId, route_id: message.route_id, executed: true };
+  }
+
+  private pruneDedupeWindow(): void {
+    const currentTime = this.now();
+    for (const [messageId, expiresAt] of this.executedMessages.entries()) {
+      if (expiresAt <= currentTime) {
+        this.executedMessages.delete(messageId);
+      }
+    }
   }
 }
 
 export function executionKey(message: BridgeMessage): string {
   return [
-    message.route_id,
-    message.source_domain,
-    message.destination_domain,
     message.nonce,
     message.sender,
     message.recipient,
