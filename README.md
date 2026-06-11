@@ -1,6 +1,8 @@
-﻿# solguard-dtl-test-v1
+﻿# Solguard Lab (DTL-v1) 
 
 Symbolic distributed ledger infrastructure used as an audit fixture for Solguard tooling.
+
+![banner](./assets/banner.png)
 
 The project models a compact DLT stack with:
 
