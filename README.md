@@ -1,16 +1,26 @@
-﻿# Solguard Lab (DTL-v1) 
+# Solguard Lab DTL-v1
 
-Symbolic distributed ledger infrastructure used as an audit fixture for Solguard tooling.
+Symbolic distributed ledger infrastructure used as a deterministic audit fixture for Solguard tooling.
 
 ![banner](./assets/banner.png)
 
-The project models a compact DLT stack with:
+DTL-v1 is intentionally compact, but it is organized like a real protocol repository. It gives `solguard-map`, `solguard-trace`, `solguard-diff`, `solguard-database` and `analyze` enough structure to enumerate surfaces, follow execution paths and reason about changes.
+
+This is not a production blockchain implementation. It is a local lab for repeatable security analysis.
+
+## What It Models
 
 - Go ledger, consensus, network and bridge primitives.
 - TypeScript RPC, relayer and indexer clients.
-- Integration tests and operational documentation.
+- Integration tests and operational documentation for nominal behavior.
 
-It is intentionally small enough to inspect, but structured like a real target repository so mapping, tracing, diffing and analysis tools have meaningful surfaces to enumerate.
+## Auditable Surfaces
+
+- Block execution, account nonces and state root calculation.
+- Validator sets, quorum checks and checkpoint finality.
+- Bridge route validation and cross-domain message execution.
+- RPC client boundaries and indexer state reconstruction.
+- Recent consensus and relayer changes in git history.
 
 ## Commands
 
@@ -31,3 +41,15 @@ tests/              Go integration tests
 ts/                 TypeScript clients and tests
 docs/               architecture and operations notes
 ```
+
+## Solguard Usage
+
+Recommended analysis flow:
+
+```bash
+solguard-map .
+solguard-trace .
+solguard-diff .
+```
+
+Use this lab as a known target when validating whether Solguard can connect source structure, git history, deterministic traces and knowledge-base retrieval into useful audit hypotheses.
