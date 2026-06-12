@@ -8,20 +8,6 @@ DTL-v1 is intentionally compact, but it is organized like a real protocol reposi
 
 This is not a production blockchain implementation. It is a local lab for repeatable security analysis.
 
-## What It Models
-
-- Go ledger, consensus, network and bridge primitives.
-- TypeScript RPC, relayer and indexer clients.
-- Integration tests and operational documentation for nominal behavior.
-
-## Auditable Surfaces
-
-- Block execution, account nonces and state root calculation.
-- Validator sets, quorum checks and checkpoint finality.
-- Bridge route validation and cross-domain message execution.
-- RPC client boundaries and indexer state reconstruction.
-- Recent consensus and relayer changes in git history.
-
 ## Commands
 
 ```bash
